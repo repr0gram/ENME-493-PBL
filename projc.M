@@ -42,5 +42,5 @@ for i = 1:length(aoa)
 end
 
 % Display results
-disp('AOA   Normal Force (N)   Moment (N*m)   Stress (Pa)')
-disp([aoa' normal_force' moment' sigma'])
+T = table(aoa', normal_force', moment', sigma', 'VariableNames', {'AOA', 'Normal_Force_N', 'Moment_Nm', 'Stress_Pa'});
+disp(T)
