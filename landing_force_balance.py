@@ -1,4 +1,6 @@
 import math
+import os 
+os.system('cls')
 
 Max_landing_mass = 75000
 landing_velocity = 142 #knots
@@ -12,6 +14,10 @@ L = 0.5*Rho*(V_l)**2*Cl_max*Sw
 W = Max_landing_mass * 9.81 
 aoa = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 
+normal_force = []
+
 for alpha in aoa:
     Fm= W-(L*math.cos(math.radians(alpha)))
-    print(Fm)
+    normal_force.append(Fm)
+
+
