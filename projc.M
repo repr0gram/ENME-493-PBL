@@ -27,18 +27,18 @@ L = 0.5 * Rho * (V_1)^2 * Cl_max * Sw;
 W = Max_landing_mass * 9.81;
 
 aoa = 0:10;
-bank_angle = 0:10;
+bank_angle = 5:15;
 
 % 2 Wheel landing results
-normal_force2W = zeros(size(aoa));
-moment2W = zeros(size(aoa));
-sigmaBend2W = zeros(size(aoa));
-taoShear2W = zeros(size(aoa));
-taoTorsion2W = zeros(size(aoa));
-vonMises2W = zeros(size(aoa));
-vonMisesSF2W = zeros(size(aoa));
-tresca2W = zeros(size(aoa));
-trescaSF2W = zeros(size(aoa));
+normal_force4W = zeros(size(aoa));
+moment4W = zeros(size(aoa));
+sigmaBend4W = zeros(size(aoa));
+taoShear4W = zeros(size(aoa));
+taoTorsion4W = zeros(size(aoa));
+vonMises4W = zeros(size(aoa));
+vonMisesSF4W = zeros(size(aoa));
+tresca4W = zeros(size(aoa));
+trescaSF4W = zeros(size(aoa));
 fatigueSF = zeros(size(aoa));
 
 % 2 Wheel landing results
@@ -60,50 +60,51 @@ for i = 1:length(aoa)
 
         l = 0.2045; %m
         y = 0.08;   %m
+        n = 2;    %vertical landing load factor
 
     % Normal force
-        Fm = W - (L * cosd(alpha));
+        Fm = (n*W) - (L * cosd(alpha));
         normal_force(i) = Fm;
 
-    % 2 WHEEL LANDING
+    % 4 WHEEL LANDING
         l = 0.2045; %m
         y = 0.08;   %m
 
         % Bending Moment
-        M2W = (Fm / 4) * l;
-        moment2W(i) = M2W;
+        M4W = (Fm / 4) * l;
+        moment2W(i) = M4W;
     
         % Bending stress
-        SigmaBend2W = (M2W * y) / I_axle;
-        sigmaBend2W(i) = SigmaBend2W;
+        SigmaBend4W = (M4W * y) / I_axle;
+        sigmaBend4W(i) = SigmaBend4W;
 
         % Transverse Shear
         Q = (pi * (0.08)^3) / 2;
         V = (Fm/4);
         t = 0.162;
-        TaoShear2W = (V * Q) / I_axle * t;
-        taoShear2W(i) = TaoShear2W;
+        TaoShear4W = (V * Q) / I_axle * t;
+        taoShear4W(i) = TaoShear4W;
 
         % Torsional Shear
         Fric = Mew * (Fm/4); 
         T = Fric * (0.08);
-        TaoTorsion2W = (16 * T) / (pi * (0.08)^3);
-        taoTorsion2W(i) = TaoTorsion2W;
+        TaoTorsion4W = (16 * T) / (pi * (0.08)^3);
+        taoTorsion4W(i) = TaoTorsion4W;
 
         %Von Mises
-        VonMises2W = sqrt((SigmaBend2W)^2 + 3*(TaoShear2W + TaoTorsion2W)^2);
-        vonMises2W(i) = VonMises2W;
-        VonMisesSF2W = SigmaY / VonMises2W;
-        vonMisesSF2W(i) = VonMisesSF2W;
+        VonMises4W = sqrt((SigmaBend4W)^2 + 3*(TaoShear4W + TaoTorsion4W)^2);
+        vonMises4W(i) = VonMises4W;
+        VonMisesSF4W = SigmaY / VonMises4W;
+        vonMisesSF4W(i) = VonMisesSF4W;
 
         %Tresca Shear
-        Tresca2W = sqrt((SigmaBend2W/2)^2 + (TaoShear2W + TaoTorsion2W)^2);
-        tresca2W(i) = Tresca2W;
-        TrescaSF2W = (SigmaY/2)/Tresca2W;
-        trescaSF2W(i) = TrescaSF2W;
+        Tresca4W = sqrt((SigmaBend4W/2)^2 + (TaoShear4W + TaoTorsion4W)^2);
+        tresca4W(i) = Tresca4W;
+        TrescaSF4W = (SigmaY/2)/Tresca4W;
+        trescaSF4W(i) = TrescaSF4W;
 
         %Torsional Fatigue (infinte lifetime)
-        FatigueSF = (LC * Cg * Ct * Cr * Cs * SnPrime)/TaoTorsion2W;
+        FatigueSF = (LC * Cg * Ct * Cr * Cs * SnPrime)/TaoTorsion4W;
         fatigueSF(i) = FatigueSF;
 
     % 2 WHEEL LANDING
@@ -145,10 +146,10 @@ end
 % Display results
 disp('Two Wheel Landing Stresses')
 disp(' aoa BendingStress(Pa) TransverseShear(Pa) TorsionShear' )
-disp([aoa' sigmaBend2W' taoShear2W' taoTorsion2W'])
+disp([aoa' sigmaBend4W' taoShear4W' taoTorsion4W'])
 disp('Two Wheel Landing Failures')
 disp('VonMises VonMisesSF Tresca TrescaSF FatigueSF')
-disp([vonMises2W' vonMisesSF2W' tresca2W' trescaSF2W' fatigueSF'])
+disp([vonMises4W' vonMisesSF4W' tresca4W' trescaSF4W' fatigueSF'])
 
 disp('One Wheel Landing Stresses')
 disp(' aoa BendingStress(Pa) TransverseShear(Pa) TorsionShear' )
