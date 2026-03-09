@@ -145,15 +145,17 @@ end
 
 % Display results
 disp('Two Wheel Landing Stresses')
-disp(' aoa BendingStress(Pa) TransverseShear(Pa) TorsionShear' )
-disp([aoa' sigmaBend4W' taoShear4W' taoTorsion4W'])
+T1 = table(aoa', sigmaBend4W', taoShear4W', taoTorsion4W', 'VariableNames', {'aoa_deg', 'BendingStress_Pa', 'TransverseShear_Pa', 'TorsionShear_Pa'});
+disp(T1)
+
 disp('Two Wheel Landing Failures')
-disp('VonMises VonMisesSF Tresca TrescaSF FatigueSF')
-disp([vonMises4W' vonMisesSF4W' tresca4W' trescaSF4W' fatigueSF'])
+T2 = table(aoa', vonMises4W', vonMisesSF4W', tresca4W', trescaSF4W', fatigueSF', 'VariableNames', {'aoa_deg', 'VonMises_Pa', 'VonMisesSF', 'Tresca_Pa', 'TrescaSF', 'FatigueSF'});
+disp(T2)
 
 disp('One Wheel Landing Stresses')
-disp(' aoa BendingStress(Pa) TransverseShear(Pa) TorsionShear' )
-disp([aoa' sigmaBend1W' taoShear1W' taoTorsion1W'])
+T3 = table(aoa', sigmaBend1W', taoShear1W', taoTorsion1W', 'VariableNames', {'aoa_deg', 'BendingStress_Pa', 'TransverseShear_Pa', 'TorsionShear_Pa'});
+disp(T3)
+
 disp('One Wheel Landing Failures')
-disp('VonMises VonMisesSF Tresca TrescaSF FatigueSF')
-disp([vonMises1W' vonMisesSF1W' tresca1W' trescaSF1W'])
+T4 = table(aoa', vonMises1W', vonMisesSF1W', tresca1W', trescaSF1W', 'VariableNames', {'aoa_deg', 'VonMises_Pa', 'VonMisesSF', 'Tresca_Pa', 'TrescaSF'});
+disp(T4)
