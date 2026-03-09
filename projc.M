@@ -21,7 +21,7 @@ E = 204900000000;    % Elastic Modulus
 LC = 0.58;        % Torsion
 Cg = 1.51 * (162)^(-0.157); % diameter driven
 Ct = 1;           % Temp - assume 1
-Cr = 0.9;         % Reliability of 90%
+Cr = 0.81;         % Reliability of 99%
 Cs = 0.77;        % Forged Steel 
 SnPrime = 0.5*Su; % Steel
 
