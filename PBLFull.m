@@ -340,7 +340,7 @@ for i = 1:length(aoa)
 
 end
 
-% Display results
+%% Display results
 disp('Four Wheel Landing Stresses')
 disp(' aoa BendingStress(Pa) TransverseShear(Pa) TorsionShear' )
 disp([aoa' sigmaBend4W' taoShear4W' taoTorsion4W'])
@@ -359,3 +359,75 @@ disp('VonMises VonMisesSF Tresca TrescaSF FatigueSF')
 disp([vonMises1W' vonMisesSF1W' tresca1W' trescaSF1W'])
 disp('Strut Buckle Sf Stay Buckle Sf')
 disp([buckleStrut1WSF' buckleStay1WSF'])
+
+%% Plot results
+
+%% Plot results
+%% Safety Factor Plots
+
+figure
+tiledlayout(4,2)
+
+% Von Mises SF - 1 Wheel
+nexttile
+plot(aoa,vonMisesSF1W,'LineWidth',2)
+xlabel('Angle of Attack (deg)')
+ylabel('Safety Factor')
+title('Von Mises Safety Factor - 1 Wheel Landing')
+grid on
+
+% Von Mises SF - 4 Wheel
+nexttile
+plot(aoa,vonMisesSF4W,'LineWidth',2)
+xlabel('Angle of Attack (deg)')
+ylabel('Safety Factor')
+title('Von Mises Safety Factor - 4 Wheel Landing')
+grid on
+
+% Tresca SF - 1 Wheel
+nexttile
+plot(aoa,trescaSF1W,'LineWidth',2)
+xlabel('Angle of Attack (deg)')
+ylabel('Safety Factor')
+title('Tresca Safety Factor - 1 Wheel Landing')
+grid on
+
+% Tresca SF - 4 Wheel
+nexttile
+plot(aoa,trescaSF4W,'LineWidth',2)
+xlabel('Angle of Attack (deg)')
+ylabel('Safety Factor')
+title('Tresca Safety Factor - 4 Wheel Landing')
+grid on
+
+% Strut Buckling SF - 1 Wheel
+nexttile
+plot(aoa,buckleStrut1WSF,'LineWidth',2)
+xlabel('Angle of Attack (deg)')
+ylabel('Safety Factor')
+title('Strut Buckling Safety Factor - 1 Wheel Landing')
+grid on
+
+% Strut Buckling SF - 4 Wheel
+nexttile
+plot(aoa,buckleStrut4WSF,'LineWidth',2)
+xlabel('Angle of Attack (deg)')
+ylabel('Safety Factor')
+title('Strut Buckling Safety Factor - 4 Wheel Landing')
+grid on
+
+% Stay Buckling SF - 1 Wheel
+nexttile
+plot(aoa,buckleStay1WSF,'LineWidth',2)
+xlabel('Angle of Attack (deg)')
+ylabel('Safety Factor')
+title('Side Stay Buckling Safety Factor - 1 Wheel Landing')
+grid on
+
+% Stay Buckling SF - 4 Wheel
+% nexttile
+% plot(aoa,buckleStay4WSF,'LineWidth',2)
+% xlabel('Angle of Attack (deg)')
+% ylabel('Safety Factor')
+% title('Side Stay Buckling Safety Factor - 4 Wheel Landing')
+% grid on
