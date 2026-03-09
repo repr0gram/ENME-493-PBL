@@ -21,8 +21,8 @@ E = 204900000000;    % Elastic Modulus
 LC = 0.58;        % Torsion
 Cg = 1.51 * (162)^(-0.157); % diameter driven
 Ct = 1;           % Temp - assume 1
-Cr = 0.81;         % Reliability of 99%
-Cs = 0.77;        % Forged Steel 
+Cr = 0.9;         % Reliability of 90%
+Cs = 0.28;        % Forged Steel 
 SnPrime = 0.5*Su; % Steel
 
 %Buckling Pcrit
@@ -340,43 +340,31 @@ for i = 1:length(aoa)
 
 end
 
-% Display results
-% Four-wheel landing output tables
-T4W_stress = table(aoa', sigmaBend4W', taoShear4W', taoTorsion4W', ...
-    'VariableNames', {'aoa_deg','BendingStress_Pa','TransverseShear_Pa','TorsionShear_Pa'});
-disp('Four Wheel Landing Stresses');
-disp(T4W_stress);
+%% Display results
+disp('Four Wheel Landing Stresses')
+disp(' aoa BendingStress(Pa) TransverseShear(Pa) TorsionShear' )
+disp([aoa' sigmaBend4W' taoShear4W' taoTorsion4W'])
+disp('Two Wheel Landing Failures')
+disp('VonMises VonMisesSF Tresca TrescaSF FatigueSF')
+disp([vonMises4W' vonMisesSF4W' tresca4W' trescaSF4W' fatigueSF'])
+disp('Strut Buckle Sf Stay Buckle Sf')
+disp([buckleStrut4WSF' buckleStay4WSF'])
 
-T4W_failure = table(aoa', vonMises4W', vonMisesSF4W', tresca4W', trescaSF4W', fatigueSF', ...
-    'VariableNames', {'aoa_deg','VonMises_Pa','VonMisesSF','Tresca_Pa','TrescaSF','FatigueSF'});
-disp('Four Wheel Landing Failures');
-disp(T4W_failure);
 
-T4W_buckle = table(aoa', buckleStrut4WSF', buckleStay4WSF', ...
-    'VariableNames', {'aoa_deg','StrutBuckleSF','StayBuckleSF'});
-disp('Four Wheel Landing Buckling Safety Factors');
-disp(T4W_buckle);
+disp('One Wheel Landing Stresses')
+disp(' aoa BendingStress(Pa) TransverseShear(Pa) TorsionShear' )
+disp([aoa' sigmaBend1W' taoShear1W' taoTorsion1W'])
+disp('One Wheel Landing Failures')
+disp('VonMises VonMisesSF Tresca TrescaSF FatigueSF')
+disp([vonMises1W' vonMisesSF1W' tresca1W' trescaSF1W'])
+disp('Strut Buckle Sf Stay Buckle Sf')
+disp([buckleStrut1WSF' buckleStay1WSF'])
 
-% One-wheel landing output tables
-T1W_stress = table(aoa', sigmaBend1W', taoShear1W', taoTorsion1W', ...
-    'VariableNames', {'aoa_deg','BendingStress_Pa','TransverseShear_Pa','TorsionShear_Pa'});
-disp('One Wheel Landing Stresses');
-disp(T1W_stress);
+%% Plot results
 
-T1W_failure = table(aoa', vonMises1W', vonMisesSF1W', tresca1W', trescaSF1W', ...
-    'VariableNames', {'aoa_deg','VonMises_Pa','VonMisesSF','Tresca_Pa','TrescaSF'});
-disp('One Wheel Landing Failures');
-disp(T1W_failure);
-
-T1W_buckle = table(aoa', buckleStrut1WSF', buckleStay1WSF', ...
-    'VariableNames', {'aoa_deg','StrutBuckleSF','StayBuckleSF'});
-disp('One Wheel Landing Buckling Safety Factors');
-disp(T1W_buckle);
-
+%% Plot results
 %% Safety Factor Plots
 
-disp("Plotting now")
-drawnow
 figure
 tiledlayout(4,2)
 
