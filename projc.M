@@ -7,6 +7,9 @@ clear
 Max_landing_mass = 75000;
 landing_velocity = 142;            % knots
 V_1 = landing_velocity * 0.5144;   % m/s
+x_cg = 17.44;
+x_n = 5.07;
+x_m = 21.976;
 
 Cl_max = 1.4;   % assumed lift coefficient
 Sw = 122.4;     % m^2
@@ -32,6 +35,7 @@ Pcrit_Stay = ((pi)^2 * E * (0.0000014)) / (1.093^2);
 % Force calculations
 L = 0.5 * Rho * (V_1)^2 * Cl_max * Sw;
 W = Max_landing_mass * 9.81;
+Fm_static = (W*(x_cg-x_n))/(x_m-x_n);
 
 aoa = 0:10;
 bank_angle = 5;
@@ -64,6 +68,10 @@ buckleStrut1WSF = zeros(size(aoa));
 buckleStay1WSF = zeros(size(aoa));
 
 I_axle = (pi * (0.08^4)) / 4;
+
+sFactors = 1.25:0.1:2;
+d_min_all = zeros(length(aoa), length(sFactors));
+fatigue_safety_factor_all = zeros(size(aoa));
 
 for i = 1:length(aoa)
     alpha = aoa(i);
@@ -338,6 +346,22 @@ for i = 1:length(aoa)
         BuckleStay1WSF = Pcrit_Stay / sqrt(sol(1)^2 + sol(2)^2 + sol(3)^2);
         buckleStay1WSF(i) = BuckleStay1WSF;
 
+    %Bolt diameter
+        F7_val = double(sol(4));
+        F7y_val = F7_val * u7y
+
+        for k = 1:length(sFactors)
+            sFactor = sFactors(k);
+            d_min_all(i,k) = sqrt(abs((F7y_val * sFactor)) / (3*pi*370.2*10^6));
+        end
+
+        Pmean = (abs((F7y_val* sFactor)) + 0)/2;
+        Palternating = (abs(F7y_val* sFactor) - 0)/2;
+
+        Sigma_m = Pmean / (0.0419);
+        sigma_a = Palternating / (0.0419);
+
+        fatigue_safety_factor_all(i) = ((sigma_a/(822*10^6)) + (Sigma_m/(2030*10^6)))^(-1);
 end
 
 % Display results
@@ -372,6 +396,12 @@ T1W_buckle = table(aoa', buckleStrut1WSF', buckleStay1WSF', ...
     'VariableNames', {'aoa_deg','StrutBuckleSF','StayBuckleSF'});
 disp('One Wheel Landing Buckling Safety Factors');
 disp(T1W_buckle);
+
+T_fatigue = table(aoa', fatigue_safety_factor_all', ...
+    'VariableNames', {'aoa_deg','FatigueSafetyFactor'});
+disp('Bolt Fatigue Safety Factor - 1 Wheel Landing');
+disp(T_fatigue);
+
 
 %% Safety Factor Plots
 
@@ -435,6 +465,19 @@ xlabel('Angle of Attack (deg)')
 ylabel('Safety Factor')
 title('Side Stay Buckling Safety Factor - 1 Wheel Landing')
 grid on
+
+figure
+plot(aoa, d_min_all, 'LineWidth', 2)
+xlabel('Angle of Attack (deg)')
+ylabel('Minimum Bolt Diameter')
+title('Minimum Bolt Diameter vs Angle of Attack')
+grid on
+
+legendStrings = strings(1,length(sFactors));
+for k = 1:length(sFactors)
+    legendStrings(k) = "SF = " + num2str(sFactors(k));
+end
+legend(legendStrings, 'Location', 'best')
 
 % Stay Buckling SF - 4 Wheel
 % nexttile
