@@ -407,7 +407,13 @@ disp(T_fatigue);
 
 disp("Plotting now")
 drawnow
-figure
+
+exportDir = fullfile(fileparts(mfilename('fullpath')), 'exports');
+if ~isfolder(exportDir)
+    mkdir(exportDir);
+end
+
+fig1 = figure;
 tiledlayout(4,2)
 
 % Von Mises SF - 1 Wheel
@@ -466,7 +472,16 @@ ylabel('Safety Factor')
 title('Side Stay Buckling Safety Factor - 1 Wheel Landing')
 grid on
 
-figure
+% Stay Buckling SF - 4 Wheel
+nexttile
+plot(aoa, buckleStay4WSF, 'LineWidth', 2)
+xlabel('Angle of Attack (deg)')
+ylabel('Safety Factor')
+title('Side Stay Buckling Safety Factor - 4 Wheel Landing')
+grid on
+
+%% Minimum Bolt Diameter
+fig2 = figure;
 plot(aoa, d_min_all, 'LineWidth', 2)
 xlabel('Angle of Attack (deg)')
 ylabel('Minimum Bolt Diameter')
@@ -479,10 +494,167 @@ for k = 1:length(sFactors)
 end
 legend(legendStrings, 'Location', 'best')
 
-% Stay Buckling SF - 4 Wheel
-% nexttile
-% plot(aoa,buckleStay4WSF,'LineWidth',2)
-% xlabel('Angle of Attack (deg)')
-% ylabel('Safety Factor')
-% title('Side Stay Buckling Safety Factor - 4 Wheel Landing')
-% grid on
+%% Stress Comparison: 1-Wheel vs 4-Wheel Landing
+fig3 = figure('Position', [100, 100, 1100, 500]);
+tiledlayout(1, 3, 'TileSpacing', 'compact', 'Padding', 'compact')
+
+% bending stress comparison
+nexttile
+plot(aoa, sigmaBend1W/1e6, '-o', 'LineWidth', 2, 'MarkerSize', 5, 'Color', [0.85, 0.33, 0.10])
+hold on
+plot(aoa, sigmaBend4W/1e6, '-s', 'LineWidth', 2, 'MarkerSize', 5, 'Color', [0.00, 0.45, 0.74])
+yline(SigmaY/1e6, '--r', 'LineWidth', 1.5)
+hold off
+xlabel('Angle of Attack (deg)')
+ylabel('Stress (MPa)')
+title('Bending Stress')
+legend('1-Wheel', '4-Wheel', 'Yield Strength', 'Location', 'best')
+grid on
+
+% von mises comparison
+nexttile
+plot(aoa, vonMises1W/1e6, '-o', 'LineWidth', 2, 'MarkerSize', 5, 'Color', [0.85, 0.33, 0.10])
+hold on
+plot(aoa, vonMises4W/1e6, '-s', 'LineWidth', 2, 'MarkerSize', 5, 'Color', [0.00, 0.45, 0.74])
+yline(SigmaY/1e6, '--r', 'LineWidth', 1.5)
+hold off
+xlabel('Angle of Attack (deg)')
+ylabel('Stress (MPa)')
+title('Von Mises Equivalent Stress')
+legend('1-Wheel', '4-Wheel', 'Yield Strength', 'Location', 'best')
+grid on
+
+% tresca comparison
+nexttile
+plot(aoa, tresca1W/1e6, '-o', 'LineWidth', 2, 'MarkerSize', 5, 'Color', [0.85, 0.33, 0.10])
+hold on
+plot(aoa, tresca4W/1e6, '-s', 'LineWidth', 2, 'MarkerSize', 5, 'Color', [0.00, 0.45, 0.74])
+yline(SigmaY/2/1e6, '--r', 'LineWidth', 1.5)
+hold off
+xlabel('Angle of Attack (deg)')
+ylabel('Stress (MPa)')
+title('Tresca Shear Stress')
+legend('1-Wheel', '4-Wheel', 'Yield/2', 'Location', 'best')
+grid on
+
+sgtitle('Stress Comparison Across Landing Scenarios', 'FontSize', 14, 'FontWeight', 'bold')
+
+%% Axle Stress Breakdown - Bar Chart at Worst Case (alpha = 0)
+fig4 = figure('Position', [100, 100, 900, 500]);
+
+stressLabels = categorical({'Bending', 'Transverse Shear', 'Torsional Shear'});
+stressLabels = reordercats(stressLabels, {'Bending', 'Transverse Shear', 'Torsional Shear'});
+stressVals = [sigmaBend1W(1)/1e6, sigmaBend4W(1)/1e6;
+              taoShear1W(1)/1e6,  taoShear4W(1)/1e6;
+              taoTorsion1W(1)/1e6, taoTorsion4W(1)/1e6];
+
+b = bar(stressLabels, stressVals, 'grouped');
+b(1).FaceColor = [0.85, 0.33, 0.10];
+b(2).FaceColor = [0.00, 0.45, 0.74];
+ylabel('Stress (MPa)')
+title('Axle Stress Breakdown at \alpha = 0° (Worst Case)', 'FontSize', 13)
+legend('1-Wheel Landing', '4-Wheel Landing', 'Location', 'northwest')
+grid on
+
+% add value labels on bars
+for k = 1:2
+    xtips = b(k).XEndPoints;
+    ytips = b(k).YEndPoints;
+    labels = compose("%.1f", b(k).YData);
+    text(xtips, ytips, labels, 'HorizontalAlignment', 'center', ...
+        'VerticalAlignment', 'bottom', 'FontSize', 9, 'FontWeight', 'bold')
+end
+
+%% Safety Factor Summary - All Failure Modes at alpha = 0
+fig5 = figure('Position', [100, 100, 1000, 550]);
+
+sfLabels = categorical({'Von Mises', 'Tresca', 'Fatigue', 'Strut Buckling', 'Stay Buckling'});
+sfLabels = reordercats(sfLabels, {'Von Mises', 'Tresca', 'Fatigue', 'Strut Buckling', 'Stay Buckling'});
+
+sf1W = [vonMisesSF1W(1), trescaSF1W(1), NaN, buckleStrut1WSF(1), buckleStay1WSF(1)];
+sf4W = [vonMisesSF4W(1), trescaSF4W(1), fatigueSF(1), buckleStrut4WSF(1), buckleStay4WSF(1)];
+
+b = bar(sfLabels, [sf1W; sf4W]', 'grouped');
+b(1).FaceColor = [0.85, 0.33, 0.10];
+b(2).FaceColor = [0.00, 0.45, 0.74];
+hold on
+yline(1, '--r', 'SF = 1', 'LineWidth', 2, 'FontSize', 11, 'LabelHorizontalAlignment', 'left')
+yline(1.5, ':k', 'SF = 1.5 (Typical Design Target)', 'LineWidth', 1.5, 'FontSize', 9, ...
+    'LabelHorizontalAlignment', 'left')
+hold off
+ylabel('Safety Factor')
+title('Safety Factor Summary at \alpha = 0° — All Failure Modes', 'FontSize', 13)
+legend('1-Wheel Landing', '4-Wheel Landing', 'Location', 'best')
+grid on
+
+% add value labels
+for k = 1:2
+    xtips = b(k).XEndPoints;
+    ytips = b(k).YEndPoints;
+    labels = compose("%.2f", b(k).YData);
+    text(xtips, ytips, labels, 'HorizontalAlignment', 'center', ...
+        'VerticalAlignment', 'bottom', 'FontSize', 9, 'FontWeight', 'bold')
+end
+
+%% Safety Factor Heatmap - All AoA vs Failure Modes (4-Wheel)
+fig6 = figure('Position', [100, 100, 900, 450]);
+
+sfMatrix4W = [vonMisesSF4W; trescaSF4W; fatigueSF; buckleStrut4WSF; buckleStay4WSF];
+modeLabels = {'Von Mises', 'Tresca', 'Fatigue', 'Strut Buckling', 'Stay Buckling'};
+
+imagesc(aoa, 1:5, sfMatrix4W)
+colormap(flipud(hot))
+cb = colorbar;
+cb.Label.String = 'Safety Factor';
+cb.Label.FontSize = 11;
+set(gca, 'YTick', 1:5, 'YTickLabel', modeLabels)
+xlabel('Angle of Attack (deg)')
+title('Safety Factor Heatmap — 4-Wheel Landing', 'FontSize', 13)
+
+% overlay text values
+for row = 1:5
+    for col = 1:length(aoa)
+        val = sfMatrix4W(row, col);
+        if val < 2
+            txtColor = 'w';
+        else
+            txtColor = 'k';
+        end
+        text(aoa(col), row, sprintf('%.1f', val), ...
+            'HorizontalAlignment', 'center', 'FontSize', 8, ...
+            'FontWeight', 'bold', 'Color', txtColor)
+    end
+end
+
+%% Normal Force vs Angle of Attack
+fig7 = figure('Position', [100, 100, 700, 450]);
+
+plot(aoa, normal_force/1e3, '-o', 'LineWidth', 2.5, 'MarkerSize', 6, ...
+    'Color', [0.47, 0.67, 0.19], 'MarkerFaceColor', [0.47, 0.67, 0.19])
+xlabel('Angle of Attack (deg)')
+ylabel('Normal Force (kN)')
+title('Landing Gear Normal Force vs Angle of Attack', 'FontSize', 13)
+grid on
+
+% shade the region where lift increases
+hold on
+yyaxis right
+liftVals = 0.5*Rho*(V_1)^2*Cl_max*Sw*cosd(aoa);
+area(aoa, liftVals/1e3, 'FaceAlpha', 0.15, 'EdgeColor', 'none', 'FaceColor', [0.30, 0.75, 0.93])
+ylabel('Lift Component (kN)')
+hold off
+legend('Normal Force on Gear', 'Vertical Lift Component', 'Location', 'best')
+
+%% Export All Figures
+exportFigs = {fig1, 'safety_factor_tiled'; ...
+              fig2, 'min_bolt_diameter'; ...
+              fig3, 'stress_comparison'; ...
+              fig4, 'stress_breakdown_bar'; ...
+              fig5, 'safety_factor_summary'; ...
+              fig6, 'safety_factor_heatmap'; ...
+              fig7, 'normal_force_vs_aoa'};
+
+for k = 1:size(exportFigs, 1)
+    exportgraphics(exportFigs{k, 1}, fullfile(exportDir, exportFigs{k, 2} + ".png"), 'Resolution', 300)
+end
+disp("All figures exported to: " + exportDir)
