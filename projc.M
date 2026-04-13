@@ -1,4 +1,3 @@
-
 %% Deformation Cases
 clc
 clear
@@ -17,7 +16,7 @@ Rho = 1.1;      % kg/m^3
 
 Mew = 0.8;           % between tarmac / wheel
 SigmaY = 1510000000; % yield strength of axle (Pa)
-Su = 1580000000;     % ultimate tensile strength of axle (Pa)
+Su = 2030000000;     % ultimate tensile strength of axle (Pa)
 E = 204900000000;    % Elastic Modulus
 
 % Axle fatigue Coefficients
@@ -38,7 +37,7 @@ W = Max_landing_mass * 9.81;
 Fm_static = (W*(x_cg-x_n))/(x_m-x_n);
 
 aoa = 0:10;
-bank_angle = 5;
+bank_angle = 0;
 
 % 2 Wheel landing results
 normal_force4W = zeros(size(aoa));
@@ -348,20 +347,20 @@ for i = 1:length(aoa)
 
     %Bolt diameter
         F7_val = double(sol(4));
-        F7y_val = F7_val * u7y
+        F7y_val = F7_val * u7y;
 
         for k = 1:length(sFactors)
             sFactor = sFactors(k);
             d_min_all(i,k) = sqrt(abs((F7y_val * sFactor)) / (3*pi*370.2*10^6));
         end
 
-        Pmean = (abs((F7y_val* sFactor)) + 0)/2;
-        Palternating = (abs(F7y_val* sFactor) - 0)/2;
+        Pmean = (abs((sqrt(F1x^2 + F1y^2 + F1z^2))) + 0)/2;
+        Palternating = (abs(sqrt(F1x^2 + F1y^2 + F1z^2)) - 0)/2;
 
         Sigma_m = Pmean / (0.0419);
         sigma_a = Palternating / (0.0419);
 
-        fatigue_safety_factor_all(i) = ((sigma_a/(822*10^6)) + (Sigma_m/(2030*10^6)))^(-1);
+        fatigue_safety_factor_all(i) = 1/(((sigma_a/(79.23*10^6)) + (Sigma_m/(2030*10^6))));
 end
 
 % Display results
@@ -399,7 +398,7 @@ disp(T1W_buckle);
 
 T_fatigue = table(aoa', fatigue_safety_factor_all', ...
     'VariableNames', {'aoa_deg','FatigueSafetyFactor'});
-disp('Bolt Fatigue Safety Factor - 1 Wheel Landing');
+disp('Strut Fatigue Safety Factor - 1 Wheel Landing');
 disp(T_fatigue);
 
 
@@ -644,17 +643,3 @@ area(aoa, liftVals/1e3, 'FaceAlpha', 0.15, 'EdgeColor', 'none', 'FaceColor', [0.
 ylabel('Lift Component (kN)')
 hold off
 legend('Normal Force on Gear', 'Vertical Lift Component', 'Location', 'best')
-
-%% Export All Figures
-exportFigs = {fig1, 'safety_factor_tiled'; ...
-              fig2, 'min_bolt_diameter'; ...
-              fig3, 'stress_comparison'; ...
-              fig4, 'stress_breakdown_bar'; ...
-              fig5, 'safety_factor_summary'; ...
-              fig6, 'safety_factor_heatmap'; ...
-              fig7, 'normal_force_vs_aoa'};
-
-for k = 1:size(exportFigs, 1)
-    exportgraphics(exportFigs{k, 1}, fullfile(exportDir, exportFigs{k, 2} + ".png"), 'Resolution', 300)
-end
-disp("All figures exported to: " + exportDir)

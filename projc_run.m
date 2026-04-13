@@ -1,4 +1,3 @@
-
 %% Deformation Cases
 clc
 clear
@@ -7,6 +6,9 @@ clear
 Max_landing_mass = 75000;
 landing_velocity = 142;            % knots
 V_1 = landing_velocity * 0.5144;   % m/s
+x_cg = 17.44;
+x_n = 5.07;
+x_m = 21.976;
 
 Cl_max = 1.4;   % assumed lift coefficient
 Sw = 122.4;     % m^2
@@ -14,7 +16,7 @@ Rho = 1.1;      % kg/m^3
 
 Mew = 0.8;           % between tarmac / wheel
 SigmaY = 1510000000; % yield strength of axle (Pa)
-Su = 1580000000;     % ultimate tensile strength of axle (Pa)
+Su = 2030000000;     % ultimate tensile strength of axle (Pa)
 E = 204900000000;    % Elastic Modulus
 
 % Axle fatigue Coefficients
@@ -32,9 +34,10 @@ Pcrit_Stay = ((pi)^2 * E * (0.0000014)) / (1.093^2);
 % Force calculations
 L = 0.5 * Rho * (V_1)^2 * Cl_max * Sw;
 W = Max_landing_mass * 9.81;
+Fm_static = (W*(x_cg-x_n))/(x_m-x_n);
 
 aoa = 0:10;
-bank_angle = 5;
+bank_angle = 0;
 
 % 2 Wheel landing results
 normal_force4W = zeros(size(aoa));
@@ -64,6 +67,10 @@ buckleStrut1WSF = zeros(size(aoa));
 buckleStay1WSF = zeros(size(aoa));
 
 I_axle = (pi * (0.08^4)) / 4;
+
+sFactors = 1.25:0.1:2;
+d_min_all = zeros(length(aoa), length(sFactors));
+fatigue_safety_factor_all = zeros(size(aoa));
 
 for i = 1:length(aoa)
     alpha = aoa(i);
@@ -129,12 +136,42 @@ for i = 1:length(aoa)
         M1z = N1y*0.46355 - N2y*0.46355 + N1x*0.635 - N2x*0.635;
         M1y = -N1z*0.46355 + N2z*0.46355;
         
-        %2-7 Solve landing gear system numerically
-        sol = solveLandingGear(F1x, F1y, F1z, M1z, M1y, ...
-            u5x, u5y, u5z, u7x, u7y, u7z, ...
-            L_strut, L3, L7, z7, zb1, L_side_stay_upper, ...
-            theta3_xy, theta3_yz, theta3_xz);
-
+        %2 Main Strut:
+        syms F3x F3y F3z F7 Fb1x Fb1y Fb1z Fb2x Fb2y Fb2z
+        F7x = F7*u7x;
+        F7y = F7*u7y;
+        F7z = F7*u7z;
+        
+        eqn1 = -F1x + F3x + F7x + Fb1x + Fb2x == 0;
+        eqn2 = -F1y + F3y + F7y + Fb1y + Fb2y == 0;
+        eqn3 = Fb1z + Fb2z + F7z + F3z - F1z == 0;
+        eqn4 = -M1z - L_strut*F1x + (L_strut - L3)*F3x + (L_strut - L7)*F7x == 0;
+        eqn5 = -L3*F3z - L7*F7z - L_strut*Fb1z - L_strut*Fb2z + z7*F7y + zb1*Fb1y == 0;
+        eqn6 = -M1y + z7*F7x + zb1*Fb1x == 0;
+        
+        %4 upper:
+        syms Fb3x Fb3y Fb3z F6x F6y F6z F5
+        F5x = F5*u5x;
+        F5y = F5*u5y;
+        F5z = F5*u5z;
+        
+        eqn7 = Fb3x + F6x + F5x - F3x == 0;
+        eqn8 = Fb3y + F6y + F5y - F3y == 0;
+        eqn9 = -F3z + F6z + Fb3z + F5z == 0;
+        eqn10 = -L_side_stay_upper*sin(theta3_xy)*Fb3y - L_side_stay_upper*sin(theta3_xy)*F5y - L_side_stay_upper*cos(theta3_xy)*Fb3x - L_side_stay_upper*cos(theta3_xy)*F6x == 0;
+        eqn11 = -L_side_stay_upper*sin(theta3_yz)*Fb3y - L_side_stay_upper*sin(theta3_yz)*F5y - L_side_stay_upper*cos(theta3_yz)*F5z - L_side_stay_upper*cos(theta3_yz)*Fb3z == 0;
+        eqn12 = -L_side_stay_upper*sin(theta3_xz)*Fb3z - L_side_stay_upper*sin(theta3_xz)*F5z - L_side_stay_upper*cos(theta3_xz)*F5x - L_side_stay_upper*cos(theta3_xz)*Fb3x == 0;
+        
+        %6 lock stay lower: (Can be treated as a two-force member)
+        eqn13 = -F6x - F5x - F7x == 0;
+        eqn14 = -F6y - F5y - F7y == 0;
+        eqn15 = -F5z - F7z - F6z == 0;
+        
+        equations = [eqn1, eqn2, eqn3, eqn4, eqn5, eqn6, eqn7, eqn8, eqn9, eqn10, eqn11, eqn12, eqn13, eqn14, eqn15];
+        variables = [F3x, F3y, F3z, F7, Fb1x, Fb1y, Fb1z, Fb2x, Fb2y, Fb2z, Fb3x, Fb3y, Fb3z, F6x, F6y, F6z, F5];
+        [A,B] = equationsToMatrix(equations,variables);
+        sol = linsolve(A,B);
+        
         l = 0.2045; %m
         y = 0.08;   %m
 
@@ -233,11 +270,41 @@ for i = 1:length(aoa)
         M1z = N1y*0.46355 - N2y*0.46355 + N1x*0.635 - N2x*0.635;
         M1y = -N1z*0.46355 + N2z*0.46355;
         
-        %2-7 Solve landing gear system numerically
-        sol = solveLandingGear(F1x, F1y, F1z, M1z, M1y, ...
-            u5x, u5y, u5z, u7x, u7y, u7z, ...
-            L_strut, L3, L7, z7, zb1, L_side_stay_upper, ...
-            theta3_xy, theta3_yz, theta3_xz);
+        %2 Main Strut:
+        syms F3x F3y F3z F7 Fb1x Fb1y Fb1z Fb2x Fb2y Fb2z
+        F7x = F7*u7x;
+        F7y = F7*u7y;
+        F7z = F7*u7z;
+        
+        eqn1 = -F1x + F3x + F7x + Fb1x + Fb2x == 0;
+        eqn2 = -F1y + F3y + F7y + Fb1y + Fb2y == 0;
+        eqn3 = Fb1z + Fb2z + F7z + F3z - F1z == 0;
+        eqn4 = -M1z - L_strut*F1x + (L_strut - L3)*F3x + (L_strut - L7)*F7x == 0;
+        eqn5 = -L3*F3z - L7*F7z - L_strut*Fb1z - L_strut*Fb2z + z7*F7y + zb1*Fb1y == 0;
+        eqn6 = -M1y + z7*F7x + zb1*Fb1x == 0;
+        
+        %4 upper:
+        syms Fb3x Fb3y Fb3z F6x F6y F6z F5
+        F5x = F5*u5x;
+        F5y = F5*u5y;
+        F5z = F5*u5z;
+        
+        eqn7 = Fb3x + F6x + F5x - F3x == 0;
+        eqn8 = Fb3y + F6y + F5y - F3y == 0;
+        eqn9 = -F3z + F6z + Fb3z + F5z == 0;
+        eqn10 = -L_side_stay_upper*sin(theta3_xy)*Fb3y - L_side_stay_upper*sin(theta3_xy)*F5y - L_side_stay_upper*cos(theta3_xy)*Fb3x - L_side_stay_upper*cos(theta3_xy)*F6x == 0;
+        eqn11 = -L_side_stay_upper*sin(theta3_yz)*Fb3y - L_side_stay_upper*sin(theta3_yz)*F5y - L_side_stay_upper*cos(theta3_yz)*F5z - L_side_stay_upper*cos(theta3_yz)*Fb3z == 0;
+        eqn12 = -L_side_stay_upper*sin(theta3_xz)*Fb3z - L_side_stay_upper*sin(theta3_xz)*F5z - L_side_stay_upper*cos(theta3_xz)*F5x - L_side_stay_upper*cos(theta3_xz)*Fb3x == 0;
+        
+        %6 lock stay lower: (Can be treated as a two-force member)
+        eqn13 = -F6x - F5x - F7x == 0;
+        eqn14 = -F6y - F5y - F7y == 0;
+        eqn15 = -F5z - F7z - F6z == 0;
+        
+        equations = [eqn1, eqn2, eqn3, eqn4, eqn5, eqn6, eqn7, eqn8, eqn9, eqn10, eqn11, eqn12, eqn13, eqn14, eqn15];
+        variables = [F3x, F3y, F3z, F7, Fb1x, Fb1y, Fb1z, Fb2x, Fb2y, Fb2z, Fb3x, Fb3y, Fb3z, F6x, F6y, F6z, F5];
+        [A,B] = equationsToMatrix(equations,variables);
+        sol = linsolve(A,B);
 
         % Bending Moment
         M1W = (Fm * cosd(beta)) * (l * cosd(beta));
@@ -278,6 +345,22 @@ for i = 1:length(aoa)
         BuckleStay1WSF = Pcrit_Stay / sqrt(sol(1)^2 + sol(2)^2 + sol(3)^2);
         buckleStay1WSF(i) = BuckleStay1WSF;
 
+    %Bolt diameter
+        F7_val = double(sol(4));
+        F7y_val = F7_val * u7y;
+
+        for k = 1:length(sFactors)
+            sFactor = sFactors(k);
+            d_min_all(i,k) = sqrt(abs((F7y_val * sFactor)) / (3*pi*370.2*10^6));
+        end
+
+        Pmean = (abs((sqrt(F1x^2 + F1y^2 + F1z^2))) + 0)/2;
+        Palternating = (abs(sqrt(F1x^2 + F1y^2 + F1z^2)) - 0)/2;
+
+        Sigma_m = Pmean / (0.0419);
+        sigma_a = Palternating / (0.0419);
+
+        fatigue_safety_factor_all(i) = 1/(((sigma_a/(79.23*10^6)) + (Sigma_m/(2030*10^6))));
 end
 
 % Display results
@@ -313,10 +396,17 @@ T1W_buckle = table(aoa', buckleStrut1WSF', buckleStay1WSF', ...
 disp('One Wheel Landing Buckling Safety Factors');
 disp(T1W_buckle);
 
+T_fatigue = table(aoa', fatigue_safety_factor_all', ...
+    'VariableNames', {'aoa_deg','FatigueSafetyFactor'});
+disp('Strut Fatigue Safety Factor - 1 Wheel Landing');
+disp(T_fatigue);
+
+
 %% Safety Factor Plots
 
 disp("Plotting now")
 drawnow
+
 exportDir = fullfile(fileparts(mfilename('fullpath')), 'exports');
 if ~isfolder(exportDir)
     mkdir(exportDir);
@@ -389,8 +479,22 @@ ylabel('Safety Factor')
 title('Side Stay Buckling Safety Factor - 4 Wheel Landing')
 grid on
 
+%% Minimum Bolt Diameter
+fig2 = figure;
+plot(aoa, d_min_all, 'LineWidth', 2)
+xlabel('Angle of Attack (deg)')
+ylabel('Minimum Bolt Diameter')
+title('Minimum Bolt Diameter vs Angle of Attack')
+grid on
+
+legendStrings = strings(1,length(sFactors));
+for k = 1:length(sFactors)
+    legendStrings(k) = "SF = " + num2str(sFactors(k));
+end
+legend(legendStrings, 'Location', 'best')
+
 %% Stress Comparison: 1-Wheel vs 4-Wheel Landing
-fig2 = figure('Position', [100, 100, 1100, 500]);
+fig3 = figure('Position', [100, 100, 1100, 500]);
 tiledlayout(1, 3, 'TileSpacing', 'compact', 'Padding', 'compact')
 
 % bending stress comparison
@@ -435,7 +539,7 @@ grid on
 sgtitle('Stress Comparison Across Landing Scenarios', 'FontSize', 14, 'FontWeight', 'bold')
 
 %% Axle Stress Breakdown - Bar Chart at Worst Case (alpha = 0)
-fig3 = figure('Position', [100, 100, 900, 500]);
+fig4 = figure('Position', [100, 100, 900, 500]);
 
 stressLabels = categorical({'Bending', 'Transverse Shear', 'Torsional Shear'});
 stressLabels = reordercats(stressLabels, {'Bending', 'Transverse Shear', 'Torsional Shear'});
@@ -461,7 +565,7 @@ for k = 1:2
 end
 
 %% Safety Factor Summary - All Failure Modes at alpha = 0
-fig4 = figure('Position', [100, 100, 1000, 550]);
+fig5 = figure('Position', [100, 100, 1000, 550]);
 
 sfLabels = categorical({'Von Mises', 'Tresca', 'Fatigue', 'Strut Buckling', 'Stay Buckling'});
 sfLabels = reordercats(sfLabels, {'Von Mises', 'Tresca', 'Fatigue', 'Strut Buckling', 'Stay Buckling'});
@@ -492,7 +596,7 @@ for k = 1:2
 end
 
 %% Safety Factor Heatmap - All AoA vs Failure Modes (4-Wheel)
-fig5 = figure('Position', [100, 100, 900, 450]);
+fig6 = figure('Position', [100, 100, 900, 450]);
 
 sfMatrix4W = [vonMisesSF4W; trescaSF4W; fatigueSF; buckleStrut4WSF; buckleStay4WSF];
 modeLabels = {'Von Mises', 'Tresca', 'Fatigue', 'Strut Buckling', 'Stay Buckling'};
@@ -522,7 +626,7 @@ for row = 1:5
 end
 
 %% Normal Force vs Angle of Attack
-fig6 = figure('Position', [100, 100, 700, 450]);
+fig7 = figure('Position', [100, 100, 700, 450]);
 
 plot(aoa, normal_force/1e3, '-o', 'LineWidth', 2.5, 'MarkerSize', 6, ...
     'Color', [0.47, 0.67, 0.19], 'MarkerFaceColor', [0.47, 0.67, 0.19])
@@ -542,13 +646,9 @@ legend('Normal Force on Gear', 'Vertical Lift Component', 'Location', 'best')
 
 %% Export All Figures
 exportFigs = {fig1, 'safety_factor_tiled'; ...
-              fig2, 'stress_comparison'; ...
-              fig3, 'stress_breakdown_bar'; ...
-              fig4, 'safety_factor_summary'; ...
-              fig5, 'safety_factor_heatmap'; ...
-              fig6, 'normal_force_vs_aoa'};
-
-for k = 1:size(exportFigs, 1)
-    exportgraphics(exportFigs{k, 1}, fullfile(exportDir, exportFigs{k, 2} + ".png"), 'Resolution', 300)
-end
-disp("All figures exported to: " + exportDir)
+              fig2, 'min_bolt_diameter'; ...
+              fig3, 'stress_comparison'; ...
+              fig4, 'stress_breakdown_bar'; ...
+              fig5, 'safety_factor_summary'; ...
+              fig6, 'safety_factor_heatmap'; ...
+              fig7, 'normal_force_vs_aoa'};
